@@ -51,8 +51,6 @@ import org.forgerock.cuppa.reporters.Reporter;
 public final class Runner {
     private static final ServiceLoader<ConfigurationProvider> CONFIGURATION_PROVIDER_LOADER
             = ServiceLoader.load(ConfigurationProvider.class);
-    private static final TestBlock EMPTY_TEST_BLOCK = new TestBlock(ROOT, NORMAL, Cuppa.class, "",
-            Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), new Options());
 
     private final List<Function<TestBlock, TestBlock>> coreTestTransforms;
     private final Configuration configuration;
@@ -115,7 +113,7 @@ public final class Runner {
     }
 
     private TestBlock defineTestsWithConfiguration(Iterable<Class<?>> testClasses, TestInstantiator testInstantiator) {
-        return StreamSupport.stream(testClasses.spliterator(), false)
+        List<TestBlock> testBlocks = StreamSupport.stream(testClasses.spliterator(), false)
                 .map(c -> TestContainer.INSTANCE.defineTests(c, () -> {
                     try {
                         testInstantiator.instantiate(c);
@@ -125,13 +123,13 @@ public final class Runner {
                         throw new IllegalStateException("Failed to instantiate test class", e);
                     }
                 }))
-                .reduce(EMPTY_TEST_BLOCK, this::mergeRootTestBlocks);
-    }
-
-    private TestBlock mergeRootTestBlocks(TestBlock testBlock1, TestBlock testBlock2) {
-        return new TestBlock(ROOT, NORMAL, Cuppa.class, "", Stream.concat(testBlock1.testBlocks.stream(),
-                testBlock2.testBlocks.stream()).collect(Collectors.toList()), Collections.emptyList(),
-                Collections.emptyList(), new Options());
+                .collect(Collectors.toList());
+        if (testBlocks.size() == 1) {
+            return testBlocks.get(0);
+        } else {
+            return new TestBlock(ROOT, NORMAL, Cuppa.class, "", testBlocks, Collections.emptyList(),
+                    Collections.emptyList(), new Options());
+        }
     }
 
     private static Configuration getConfiguration() {
