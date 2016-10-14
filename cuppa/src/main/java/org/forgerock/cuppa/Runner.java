@@ -20,9 +20,7 @@ import static org.forgerock.cuppa.model.TestBlockType.ROOT;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,8 +41,6 @@ import org.forgerock.cuppa.reporters.Reporter;
  * Runs Cuppa tests.
  */
 public final class Runner {
-    private static final ServiceLoader<ConfigurationProvider> CONFIGURATION_PROVIDER_LOADER
-            = ServiceLoader.load(ConfigurationProvider.class);
     private static final TestBlock EMPTY_TEST_BLOCK = new TestBlockBuilder()
             .setType(ROOT)
             .setTestClass(Cuppa.class)
@@ -56,18 +52,11 @@ public final class Runner {
 
     /**
      * Creates a new runner with no run tags and a configuration loaded from the classpath.
-     */
-    public Runner() {
-        this(Tags.EMPTY_TAGS);
-    }
-
-    /**
-     * Creates a new runner with the given run tags and a configuration loaded from the classpath.
      *
-     * @param runTags Tags to filter the tests on.
+     * @param configuration Cuppa configuration to control the behaviour of the runner.
      */
-    public Runner(Tags runTags) {
-        this(runTags, getConfiguration());
+    public Runner(Configuration configuration) {
+        this(Tags.EMPTY_TAGS, configuration);
     }
 
     /**
@@ -127,20 +116,6 @@ public final class Runner {
     private TestBlock mergeRootTestBlocks(TestBlock testBlock1, TestBlock testBlock2) {
         return EMPTY_TEST_BLOCK.toBuilder().setTestBlocks(Stream.concat(testBlock1.testBlocks.stream(),
                 testBlock2.testBlocks.stream()).collect(Collectors.toList())).build();
-    }
-
-    private static Configuration getConfiguration() {
-        Configuration configuration = new Configuration();
-        Iterator<ConfigurationProvider> iterator = CONFIGURATION_PROVIDER_LOADER.iterator();
-        if (iterator.hasNext()) {
-            ConfigurationProvider configurationProvider = iterator.next();
-            if (iterator.hasNext()) {
-                throw new CuppaException("There must only be a single configuration provider available on the "
-                        + "classpath");
-            }
-            configurationProvider.configure(configuration);
-        }
-        return configuration;
     }
 
     private TestBlock transformTests(TestBlock rootBlock, List<Function<TestBlock, TestBlock>> transforms) {

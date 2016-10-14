@@ -29,6 +29,7 @@ import org.apache.maven.surefire.report.ReporterFactory;
 import org.apache.maven.surefire.report.RunListener;
 import org.apache.maven.surefire.suite.RunResult;
 import org.forgerock.cuppa.Runner;
+import org.forgerock.cuppa.ServiceLoaderConfigurationProvider;
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.model.Tags;
 import org.forgerock.cuppa.model.TestBlock;
@@ -96,7 +97,7 @@ public final class CuppaSurefireProvider extends AbstractProvider {
     public RunResult invoke(Object forkTestSet) {
         ReporterFactory reporterFactory = providerParameters.getReporterFactory();
         RunListener listener = reporterFactory.createReporter();
-        Runner runner = new Runner(tags);
+        Runner runner = new Runner(tags, ServiceLoaderConfigurationProvider.getConfiguration());
         TestBlock rootBlock = runner.defineTests(getSuites());
         List<Reporter> reporters = Arrays.asList(new DefaultReporter(), new CuppaSurefireReporter(listener));
         runner.run(rootBlock, new CompositeReporter(reporters));

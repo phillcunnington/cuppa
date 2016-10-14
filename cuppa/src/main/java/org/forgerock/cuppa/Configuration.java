@@ -32,7 +32,10 @@ public final class Configuration {
     TestInstantiator testInstantiator = Class::newInstance;
     Reporter additionalReporter;
 
-    Configuration() {
+    /**
+     * STUFF.
+     */
+    public Configuration() {
     }
 
     /**

@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.forgerock.cuppa.ReporterSupport;
+import org.forgerock.cuppa.ServiceLoaderConfigurationProvider;
 import org.forgerock.cuppa.model.TestBlock;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
@@ -36,7 +37,7 @@ import org.junit.runner.notification.RunNotifier;
 public final class CuppaRunner extends Runner {
 
     private final Class<?> testClass;
-    private final org.forgerock.cuppa.Runner runner = new org.forgerock.cuppa.Runner();
+    private final org.forgerock.cuppa.Runner runner;
     private final TestBlock rootBlock;
 
     /**
@@ -46,6 +47,7 @@ public final class CuppaRunner extends Runner {
      */
     public CuppaRunner(Class<?> annotatedClass) {
         this.testClass = annotatedClass;
+        runner = new org.forgerock.cuppa.Runner(ServiceLoaderConfigurationProvider.getConfiguration());
         rootBlock = runner.defineTests(Collections.singletonList(annotatedClass));
     }
 
