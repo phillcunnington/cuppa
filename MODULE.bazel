@@ -1,0 +1,27 @@
+module(
+    name = "cuppa",
+    version = "1.7.0",
+)
+
+bazel_dep(name = "rules_java", version = "9.6.1")
+bazel_dep(name = "rules_jvm_external", version = "6.10")
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+
+maven.install(
+    artifacts = [
+        "org.testng:testng:6.9.9",
+        "org.assertj:assertj-core:3.2.0",
+        "org.mockito:mockito-all:1.10.19",
+        "junit:junit:4.12",
+        "org.apache.maven.surefire:surefire-api:2.22.2",
+        "org.apache.maven.surefire:common-java5:2.22.2",
+        "org.beanshell:bsh:2.0b4",
+        "com.beust:jcommander:1.48",
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+
+use_repo(maven, "maven")
