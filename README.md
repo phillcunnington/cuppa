@@ -84,15 +84,6 @@ $ ./gradlew build
 
 Run `./gradlew tasks` to see a list of all available tasks.
 
-#### Bazel
-
-Alternatively, Cuppa can be built and tested using [Bazel](https://bazel.build/):
-
-```shell
-$ bazel build //...
-$ bazel test //...
-```
-
 ## License
 
 Cuppa is licensed under an [Apache 2.0 license](./LICENSE). The documentation is licensed under a
