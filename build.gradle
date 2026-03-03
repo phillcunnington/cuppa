@@ -1,11 +1,11 @@
 plugins {
   id 'jacoco'
   id 'com.github.kt3k.coveralls' version '2.8.4'
-  id 'com.github.spotbugs' version '2.0.0'
+  id 'com.github.spotbugs' version '6.0.26'
 }
 
 allprojects {
-  apply plugin: 'maven'
+  apply plugin: 'maven-publish'
   apply plugin: 'signing'
   apply plugin: 'jacoco'
 
@@ -32,35 +32,35 @@ subprojects {
   apply plugin: 'checkstyle'
   apply plugin: 'com.github.spotbugs'
 
-  sourceCompatibility = 1.8
-  targetCompatibility = 1.8
-
-  configurations {
-    provided
+  java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
   }
 
+  // The 'java' plugin already provides 'compileOnly'.
+  // We ensure it is also available for tests to match the previous 'provided' behavior.
   sourceSets {
-    main {
-      compileClasspath += configurations.provided
-    }
     test {
-      compileClasspath += configurations.provided
+      compileClasspath += configurations.compileOnly
+      runtimeClasspath += configurations.compileOnly
     }
   }
 
   javadoc {
     options.stylesheetFile = new File(rootDir, "docs/css/javadoc.css")
-    classpath += configurations.provided
+    if (configurations.hasProperty('compileOnly')) {
+        classpath += configurations.compileOnly
+    }
   }
 
   dependencies {
-    testCompile (group: 'org.testng', name: 'testng', version:'6.9.9') {
+    testImplementation (group: 'org.testng', name: 'testng', version:'6.9.9') {
       exclude module: 'junit'
     }
-    testCompile group: 'org.assertj', name: 'assertj-core', version:'3.2.0'
-    testCompile group: 'org.mockito', name: 'mockito-all', version:'1.10.19'
+    testImplementation group: 'org.assertj', name: 'assertj-core', version:'3.2.0'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version:'1.10.19'
 
-    checkstyle 'com.puppycrawl.tools:checkstyle:6.15'
+    checkstyle 'com.puppycrawl.tools:checkstyle:10.12.4'
   }
 
   checkstyle {
@@ -69,19 +69,19 @@ subprojects {
   }
 
   test {
-    classpath += configurations.provided
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
     useTestNG()
   }
 
   jacocoTestReport {
     reports {
-      xml.enabled = true
-      html.enabled = true
+      xml.required = true
+      html.required = true
     }
   }
 
   task javadocJar(type: Jar, dependsOn: javadoc) {
-    from 'build/docs/javadoc'
+    from javadoc.destinationDir
     archiveClassifier.set 'javadoc'
   }
 
@@ -96,75 +96,58 @@ subprojects {
   }
 
   signing {
-    required { gradle.taskGraph.hasTask("uploadArchives") }
+    required { gradle.taskGraph.hasTask("publish") }
     sign configurations.archives
   }
 
-  uploadArchives {
-    repositories {
-      mavenDeployer {
-        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+  publishing {
+    publications {
+      mavenJava(MavenPublication) {
+        from components.java
+        artifact javadocJar
+        artifact sourcesJar
 
-        repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
-          authentication(userName: sonatypeUsername, password: sonatypePassword)
-        }
-
-        pom.project {
-          name 'Cuppa'
-          packaging 'jar'
-          description 'Cuppa - A testing framework for Java 8'
-          url 'http://cuppa.forgerock.org'
+        pom {
+          name = 'Cuppa'
+          description = 'Cuppa - A testing framework for Java 25'
+          url = 'http://cuppa.forgerock.org'
 
           scm {
-            url 'https://github.com/cuppa-framework/cuppa'
-            connection 'scm:git@github.com:cuppa-framework/cuppa.git'
-            developerConnection 'scm:git@github.com:cuppa-framework/cuppa.git'
+            url = 'https://github.com/cuppa-framework/cuppa'
+            connection = 'scm:git@github.com:cuppa-framework/cuppa.git'
+            developerConnection = 'scm:git@github.com:cuppa-framework/cuppa.git'
           }
 
           licenses {
             license {
-              name 'The Apache Software License, Version 2.0'
-              url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-              distribution 'repo'
+              name = 'The Apache Software License, Version 2.0'
+              url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+              distribution = 'repo'
             }
           }
 
           developers {
             developer {
-              id 'phillcunnington'
-              name 'Phill Cunnington'
+              id = 'phillcunnington'
+              name = 'Phill Cunnington'
             }
             developer {
-              id 'joebandenburg'
-              name 'Joe Bandenburg'
+              id = 'joebandenburg'
+              name = 'Joe Bandenburg'
             }
           }
         }
       }
     }
-  }
-}
-
-gradle.taskGraph.whenReady { taskGraph ->
-  if (taskGraph.hasTask(uploadArchives)) {
-    // Use Java 6's console to read from the console (no good for
-    // a CI environment)
-    Console console = System.console()
-    if (!console) {
-      logger.error "Could not get console. Are you running in daemon mode? Use --no-daemon"
+    repositories {
+      maven {
+        url = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+        credentials {
+          username = sonatypeUsername
+          password = sonatypePassword
+        }
+      }
     }
-    console.printf "\n\nWe have to sign some things in this build." +
-            "\n\nPlease enter your signing details.\n\n"
-
-    def id = console.readLine("PGP Key Id: ")
-    def file = console.readLine("PGP Secret Key Ring File (absolute path): ")
-    def password = console.readPassword("PGP Private Key Password: ")
-
-    allprojects { ext."signing.keyId" = id }
-    allprojects { ext."signing.secretKeyRingFile" = file }
-    allprojects { ext."signing.password" = password }
-
-    console.printf "\nThanks.\n\n"
   }
 }
 
@@ -179,8 +162,8 @@ task jacocoRootReport(type: JacocoReport) {
   executionData.from = files(coverageProjects.jacocoTestReport.executionData)
   reports {
     xml {
-      enabled true
-      destination file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
+      required = true
+      outputLocation = file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
     }
   }
 }

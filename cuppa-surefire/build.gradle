@@ -1,7 +1,7 @@
 description = 'Cuppa Maven Surefire Integration'
 
 dependencies {
-    compile project(':cuppa')
-    provided group: 'org.apache.maven.surefire', name: 'surefire-api', version: '2.22.2', transitive: false
-    compile group: 'org.apache.maven.surefire', name: 'common-java5', version: '2.22.2', transitive: false
+    implementation project(':cuppa')
+    compileOnly group: 'org.apache.maven.surefire', name: 'surefire-api', version: '2.22.2'
+    implementation group: 'org.apache.maven.surefire', name: 'common-java5', version: '2.22.2'
 }
